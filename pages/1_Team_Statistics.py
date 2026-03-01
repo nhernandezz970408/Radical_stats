@@ -96,6 +96,8 @@ period_options = []
 if "Period" in jam_normalized.columns:
     period_options = sorted(jam_normalized["Period"].dropna().astype(str).unique().tolist())
 
+st.subheader("General Information")
+
 selected_periods = st.multiselect(
     "Period Filter",
     options=period_options,
@@ -318,6 +320,70 @@ else:
                     )
                 )
                 st.altair_chart(line + points, use_container_width=True)
+
+    player_effective_title = "Cumulative Effective Points by Player - General"
+    if rival_label and selected_periods:
+        player_effective_title = f"Cumulative Effective Points by Player vs {rival_label} in {_period_phrase(selected_periods)}"
+    elif rival_label:
+        player_effective_title = f"Cumulative Effective Points by Player vs {rival_label}"
+
+    st.subheader(player_effective_title)
+    lineups_for_player = period_filtered.lineups.copy()
+    if lineups_for_player.empty:
+        st.info("No lineup data available for the selected filters.")
+    else:
+        role_cols = ["Jammer", "Pivot", "Block_1", "Block_2", "Block_3"]
+        lineup_long = lineups_for_player[jam_keys + role_cols].melt(
+            id_vars=jam_keys,
+            value_vars=role_cols,
+            value_name="Player_number",
+        )
+        lineup_long["Player_number"] = lineup_long["Player_number"].astype(str).str.strip()
+        lineup_long = lineup_long[(lineup_long["Player_number"].notna()) & (lineup_long["Player_number"] != "0")].copy()
+
+        # Count a player's impact once per jam even if data has duplicated role assignments.
+        lineup_long = lineup_long.drop_duplicates(subset=jam_keys + ["Player_number"])
+        player_effective = lineup_long.merge(
+            effective[jam_keys + ["effective_points"]],
+            on=jam_keys,
+            how="inner",
+        )
+
+        if player_effective.empty:
+            st.info("No player effective points data for the selected filters.")
+        else:
+            player_effective = (
+                player_effective.groupby("Player_number", as_index=False)["effective_points"]
+                .sum()
+                .rename(columns={"effective_points": "cumulative_effective_points"})
+            )
+
+            names = filtered.player_names.copy()
+            names["Player_number"] = names["Player_number"].astype(str).str.strip()
+            player_effective = player_effective.merge(names, on="Player_number", how="left")
+            player_effective["Player"] = player_effective["Name"].fillna("#" + player_effective["Player_number"])
+            player_effective = player_effective.sort_values(
+                ["cumulative_effective_points", "Player"], ascending=[False, True]
+            ).reset_index(drop=True)
+
+            player_effective_chart = (
+                alt.Chart(player_effective)
+                .mark_bar()
+                .encode(
+                    x=alt.X("Player:N", sort="-y", title="Player"),
+                    y=alt.Y("cumulative_effective_points:Q", title="Cumulative Effective Points"),
+                    color=alt.condition(
+                        "datum.cumulative_effective_points >= 0",
+                        alt.value("#1A9850"),
+                        alt.value("#D73027"),
+                    ),
+                    tooltip=[
+                        alt.Tooltip("Player:N"),
+                        alt.Tooltip("cumulative_effective_points:Q", title="Cumulative effective points"),
+                    ],
+                )
+            )
+            st.altair_chart(player_effective_chart, use_container_width=True)
 
 with st.expander("Show filtered team data"):
     st.dataframe(period_filtered.jam_table, use_container_width=True)
