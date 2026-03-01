@@ -41,6 +41,16 @@ def _extract_players_from_lineups(lineups: pd.DataFrame) -> pd.Series:
     return players[players != "0"].drop_duplicates()
 
 
+def _build_lineup_signature(row: pd.Series, role_cols: list[str]) -> str:
+    players = []
+    for col in role_cols:
+        val = str(row.get(col, "")).strip()
+        if val and val != "0" and val.lower() != "nan":
+            players.append(val)
+    unique_sorted = sorted(set(players), key=lambda x: (len(x), x))
+    return " | ".join(unique_sorted)
+
+
 def _normalize_period_column(df: pd.DataFrame, col: str = "Period") -> pd.DataFrame:
     out = df.copy()
     if col not in out.columns:
@@ -209,6 +219,7 @@ elif rival_label:
 our_jams = period_filtered.jam_table.copy()
 opp_jams = period_filtered.rival_jam_table.copy()
 jam_keys = ["Date", "Period", "Jam"]
+effective_for_lineup = pd.DataFrame(columns=jam_keys + ["effective_points"])
 
 for frame in (our_jams, opp_jams):
     if not frame.empty:
@@ -238,6 +249,7 @@ else:
     effective["jam_key"] = "J" + effective["Jam"].astype(str) + "-P" + effective["period_num"].astype(str)
     effective = effective.sort_values(["Jam", "period_num", "Date"]).reset_index(drop=True)
     effective["jam_period_order"] = range(len(effective))
+    effective_for_lineup = effective[jam_keys + ["effective_points"]].copy()
 
     with effective_col_1:
         st.subheader(effective_title)
@@ -384,6 +396,185 @@ else:
                 )
             )
             st.altair_chart(player_effective_chart, use_container_width=True)
+
+st.subheader("Lineup summary")
+lineups_summary = period_filtered.lineups.copy()
+role_cols = ["Jammer", "Pivot", "Block_1", "Block_2", "Block_3"]
+
+if lineups_summary.empty:
+    st.info("No lineup data available for the selected filters.")
+else:
+    lineups_summary["lineup_signature"] = lineups_summary.apply(
+        lambda r: _build_lineup_signature(r, role_cols), axis=1
+    )
+    lineups_summary = lineups_summary[lineups_summary["lineup_signature"] != ""].copy()
+
+    if lineups_summary.empty:
+        st.info("No valid lineup combinations found in the selected filters.")
+    else:
+        lineup_counts = (
+            lineups_summary.groupby("lineup_signature", as_index=False)
+            .size()
+            .rename(columns={"size": "jams_played"})
+            .sort_values(["jams_played", "lineup_signature"], ascending=[False, True])
+        )
+        lineup_effective = (
+            lineups_summary[jam_keys + ["lineup_signature"]]
+            .drop_duplicates()
+            .merge(effective_for_lineup, on=jam_keys, how="left")
+        )
+        lineup_effective["effective_points"] = pd.to_numeric(
+            lineup_effective["effective_points"], errors="coerce"
+        ).fillna(0)
+        lineup_effective = (
+            lineup_effective.groupby("lineup_signature", as_index=False)["effective_points"]
+            .sum()
+        )
+        lineup_counts = lineup_counts.merge(lineup_effective, on="lineup_signature", how="left")
+        lineup_counts["effective_points"] = pd.to_numeric(
+            lineup_counts["effective_points"], errors="coerce"
+        ).fillna(0)
+
+        box_cols = [c for c in lineups_summary.columns if c.endswith("_Finish_jam_Box") or c.endswith("_Start_jam_Box")]
+        if box_cols:
+            lineup_penalties = lineups_summary[["lineup_signature"] + box_cols].copy()
+            for c in box_cols:
+                lineup_penalties[c] = pd.to_numeric(lineup_penalties[c], errors="coerce").fillna(0)
+            lineup_penalties["penalties_by_lineup"] = lineup_penalties[box_cols].sum(axis=1)
+            lineup_penalties = (
+                lineup_penalties.groupby("lineup_signature", as_index=False)["penalties_by_lineup"]
+                .sum()
+            )
+        else:
+            lineup_penalties = pd.DataFrame(
+                {"lineup_signature": lineup_counts["lineup_signature"], "penalties_by_lineup": 0}
+            )
+        lineup_counts = lineup_counts.merge(lineup_penalties, on="lineup_signature", how="left")
+        lineup_counts["penalties_by_lineup"] = pd.to_numeric(
+            lineup_counts["penalties_by_lineup"], errors="coerce"
+        ).fillna(0)
+
+        names = filtered.player_names.copy()
+        names["Player_number"] = names["Player_number"].astype(str).str.strip()
+        number_to_name = dict(zip(names["Player_number"], names["Name"]))
+
+        def _signature_to_label(signature: str) -> str:
+            numbers = signature.split(" | ")
+            labels = [number_to_name.get(n, f"#{n}") for n in numbers]
+            return " + ".join(labels)
+
+        lineup_sort_option = st.selectbox(
+            "Order lineups by",
+            options=["Jams Played", "Total Effective Points"],
+            index=0,
+            key="lineup_sort_option",
+        )
+
+        lineup_counts["Lineup"] = lineup_counts["lineup_signature"].map(_signature_to_label)
+        if lineup_sort_option == "Total Effective Points":
+            lineup_counts = lineup_counts.sort_values(
+                ["effective_points", "jams_played", "Lineup"],
+                ascending=[False, False, True],
+            ).reset_index(drop=True)
+        else:
+            lineup_counts = lineup_counts.sort_values(
+                ["jams_played", "effective_points", "Lineup"],
+                ascending=[False, False, True],
+            ).reset_index(drop=True)
+        lineup_order_list = lineup_counts["Lineup"].tolist()
+
+        lineup_chart_data = lineup_counts.melt(
+            id_vars=["Lineup"],
+            value_vars=["jams_played", "effective_points", "penalties_by_lineup"],
+            var_name="metric_key",
+            value_name="metric_value",
+        )
+        lineup_chart_data["metric"] = lineup_chart_data["metric_key"].map(
+            {
+                "jams_played": "Jams Played",
+                "effective_points": "Effective Points",
+                "penalties_by_lineup": "Penalties by Lineup",
+            }
+        )
+        lineup_chart_data["bar_color"] = lineup_chart_data.apply(
+            lambda r: "#4C78A8"
+            if r["metric"] == "Jams Played"
+            else ("#E17C05" if r["metric"] == "Penalties by Lineup" else ("#1A9850" if r["metric_value"] >= 0 else "#D73027")),
+            axis=1,
+        )
+
+        lineup_chart_height = max(320, 44 * len(lineup_counts))
+        base = alt.Chart(lineup_chart_data)
+        separators = (
+            alt.Chart(lineup_counts)
+            .mark_rule(color="black", opacity=0.12)
+            .encode(
+                y=alt.Y(
+                    "Lineup:N",
+                    sort=lineup_order_list,
+                    scale=alt.Scale(paddingInner=0.35, paddingOuter=0.15),
+                )
+            )
+        )
+
+        bars = (
+            base.mark_bar()
+            .encode(
+                x=alt.X("metric_value:Q", title="Value"),
+                y=alt.Y(
+                    "Lineup:N",
+                    sort=lineup_order_list,
+                    title="Lineup",
+                    axis=alt.Axis(labelLimit=1200),
+                    scale=alt.Scale(paddingInner=0.35, paddingOuter=0.15),
+                ),
+                yOffset=alt.YOffset("metric:N"),
+                color=alt.Color("bar_color:N", scale=None, legend=None),
+                tooltip=[
+                    alt.Tooltip("Lineup:N"),
+                    alt.Tooltip("metric:N", title="Metric"),
+                    alt.Tooltip("metric_value:Q", title="Value"),
+                ],
+            )
+        )
+
+        pos_labels = (
+            base.transform_calculate(label="format(datum.metric_value, '.0f')")
+            .transform_filter("datum.metric_value >= 0")
+            .mark_text(color="#1F2933", fontSize=11, dx=6, align="left")
+            .encode(
+                x=alt.X("metric_value:Q"),
+                y=alt.Y(
+                    "Lineup:N",
+                    sort=lineup_order_list,
+                    scale=alt.Scale(paddingInner=0.35, paddingOuter=0.15),
+                ),
+                yOffset=alt.YOffset("metric:N"),
+                text=alt.Text("label:N"),
+            )
+        )
+
+        neg_labels = (
+            base.transform_calculate(label="format(datum.metric_value, '.0f')")
+            .transform_filter("datum.metric_value < 0")
+            .mark_text(color="#1F2933", fontSize=11, dx=-6, align="right")
+            .encode(
+                x=alt.X("metric_value:Q"),
+                y=alt.Y(
+                    "Lineup:N",
+                    sort=lineup_order_list,
+                    scale=alt.Scale(paddingInner=0.35, paddingOuter=0.15),
+                ),
+                yOffset=alt.YOffset("metric:N"),
+                text=alt.Text("label:N"),
+            )
+        )
+
+        lineup_chart = (
+            (separators + bars + pos_labels + neg_labels)
+            .properties(height=lineup_chart_height)
+        )
+        st.altair_chart(lineup_chart, use_container_width=True)
 
 with st.expander("Show filtered team data"):
     st.dataframe(period_filtered.jam_table, use_container_width=True)
