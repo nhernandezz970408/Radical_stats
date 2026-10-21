@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radical-stats"
+version = "0.1.0"
+description = "Estadísticas de roller derby del equipo y de las jugadoras (app Streamlit)."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "streamlit>=1.54,<2",
+    "pandas>=2.2,<3",
+    "openpyxl>=3.1,<4",
+    "altair>=5.1,<7",
+    "numpy>=1.26,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+src = ["src", "tests", "pages"]
+extend-exclude = ["data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B"]
+ignore = ["B905"]
+
+[tool.ruff.lint.per-file-ignores]
+# Las páginas añaden src/ al sys.path antes de importar el paquete.
+"pages/*.py" = ["E402"]
+"app.py" = ["E402"]

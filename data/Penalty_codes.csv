@@ -1,0 +1,16 @@
+code,nombre_es,descripcion_es
+A,Bloqueo alto,
+B,Bloqueo por la espalda,
+C,Contacto ilegal,Incluye (según la leyenda de la planilla): golpe temprano o tardío y bloqueo fuera de juego.
+D,Dirección,Incluye (según la leyenda de la planilla): bloqueo con frenado.
+E,Bloqueo con la pierna,
+F,Bloqueo con los antebrazos,
+G,Mala conducta grave,
+H,Bloqueo a la cabeza,
+I,Procedimiento ilegal,
+L,Bloqueo bajo,
+M,Bloqueo múltiple,
+N,Interferencia,Incluye (según la leyenda de la planilla): retraso del juego.
+P,Posición ilegal,"Incluye (según la leyenda de la planilla): destrucción, patinar fuera de pista, no reformar, no regresar y no ceder."
+X,Corte,Incluye (según la leyenda de la planilla): reingreso ilegal.
+Unknown,Sin código,Falta registrada sin código en el Penalty_tracker.
