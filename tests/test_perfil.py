@@ -100,23 +100,23 @@ def test_comparar_con_equipo() -> None:
 
 def test_faltas_del_equipo_son_faltas_entre_jams_jugadora() -> None:
     frames = load_data()
-    assert team_penalty_rate(frames) == pytest.approx(131 / len(lineups_long(frames.lineups)))
+    assert team_penalty_rate(frames) == pytest.approx(152 / len(lineups_long(frames.lineups)))
     profile = player_profile(frames, "17")
-    assert profile.penalties == 21 and profile.jams == 91
-    assert profile.penalties_diff == pytest.approx(21 / 91 - team_penalty_rate(frames))
+    assert profile.penalties == 26 and profile.jams == 108
+    assert profile.penalties_diff == pytest.approx(26 / 108 - team_penalty_rate(frames))
 
 
 def test_tabla_de_rol_compara_contra_el_equipo() -> None:
     frames = load_data()
     table = role_table(frames, "16", "Jammer").set_index("metrica")
-    assert table.loc["jams", "valor"] == 61
-    assert (table["n"] == 61).all()  # cada cifra con su n
+    assert table.loc["jams", "valor"] == 75
+    assert (table["n"] == 75).all()  # cada cifra con su n
     assert table.loc["puntos_por_jam", "diferencia"] == pytest.approx(
         table.loc["puntos_por_jam", "valor"] - table.loc["puntos_por_jam", "equipo"]
     )
-    assert table.loc["lead_pct", "equipo"] == pytest.approx(35.1, abs=0.05)
+    assert table.loc["lead_pct", "equipo"] == pytest.approx(37.0, abs=0.05)
     shown = formatear_tabla_rol(role_table(frames, "16", "Jammer"))
-    assert "35,1 %" in shown["Promedio del equipo"].tolist()
+    assert "37,0 %" in shown["Promedio del equipo"].tolist()
 
 
 # --- Pestañas por rol ---------------------------------------------------------------
@@ -186,6 +186,6 @@ def test_tabla_de_todas_las_jugadoras() -> None:
     frames = load_data()
     overview = players_overview(frames).set_index("Player_number")
     assert (overview["jams"] <= len(frames.lineups)).all()
-    assert overview.loc["10", "muestra"] == "Baja" and overview.loc["10", "jams"] == 3
+    assert overview.loc["10", "muestra"] == "Baja" and overview.loc["10", "jams"] == 8
     assert overview.loc["17", "muestra"] == "Ok" and overview.loc["17", "main_role"] == "Pivot"
     assert (overview["muestra"] == "Baja").tolist() == (overview["jams"] < config.MIN_JAMS_JUGADORA).tolist()

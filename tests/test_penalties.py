@@ -72,25 +72,25 @@ def test_penalties_by_jam_sintetico() -> None:
 
 def test_faltas_totales_reales() -> None:
     frames = load_data()
-    assert len(frames.penalty_tracker) == 131
-    assert penalties_by_jam(frames)["penalties"].sum() == 131
-    assert player_penalty_summary(frames)["penalties"].sum() == 131
+    assert len(frames.penalty_tracker) == 152
+    assert penalties_by_jam(frames)["penalties"].sum() == 152
+    assert player_penalty_summary(frames)["penalties"].sum() == 152
 
 
 def test_costo_de_caja_reales() -> None:
     frames = load_data()
     cost = box_cost_table(frames)
-    assert cost["jams"].sum() == 151
-    assert cost["jams"].tolist() == [78, 54, 19]
-    assert [round(v, 2) for v in cost["points_against"]] == [3.78, 5.39, 5.11]
+    assert cost["jams"].sum() == 192
+    assert cost["jams"].tolist() == [118, 55, 19]
+    assert [round(v, 2) for v in cost["points_against"]] == [3.38, 5.29, 5.11]
 
 
 def test_sin_dato_para_partido_sin_time() -> None:
     frames = load_data()
-    breakdown = player_penalty_breakdown(frames, "1013", "match_id")  # solo jugó el 2026-08-08
+    breakdown = player_penalty_breakdown(frames, "1013", "match_id")  # solo jugó el 2026-08-08 (dos partidos sin Time)
     assert breakdown["minutes_on_track"].isna().all()
     assert breakdown["penalties_per_10min"].isna().all()
-    assert breakdown["penalties"].sum() == 4
+    assert breakdown["penalties"].sum() == 6
 
 
 def test_codigos_de_falta() -> None:
@@ -99,7 +99,7 @@ def test_codigos_de_falta() -> None:
     assert set(frames.penalty_tracker["Penalty_code"]) <= set(codes["code"])
     assert len(codes) == 15
     counts = penalty_code_counts(frames, codes)
-    assert counts["penalties"].sum() == 131
+    assert counts["penalties"].sum() == 152
     unknown = counts[counts["code"] == "Unknown"].iloc[0]
     assert unknown["penalties"] == 25 and unknown["nombre_es"] == "Sin código"
 

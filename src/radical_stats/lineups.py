@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from radical_stats.partidos import crear_match_id
+from radical_stats.partidos import JAM_KEYS, crear_match_id
 
 # Columnas de origen de Lineups.xlsx. Block_1/2/3 son posiciones de la planilla, no de la cancha.
 ROLE_COLS = ["Jammer", "Pivot", "Block_1", "Block_2", "Block_3"]
@@ -10,7 +10,7 @@ ROLES = ["Jammer", "Pivot", "Bloque"]
 _ROLE_PRIORITY = {"Jammer": 0, "Pivot": 1, "Bloque": 2}
 _INVALID = {"", "0", "?", "nan", "none", "<na>"}
 LONG_COLUMNS = [
-    "Date", "Period", "Jam", "match_id", "Player_number", "Role", "Start_box", "Finish_box",
+    "Date", "Rival", "Period", "Jam", "match_id", "Player_number", "Role", "Start_box", "Finish_box",
 ]
 
 
@@ -29,7 +29,7 @@ def lineups_long(lineups: pd.DataFrame) -> pd.DataFrame:
     if lineups.empty:
         return pd.DataFrame(columns=LONG_COLUMNS)
 
-    base = lineups[["Date", "Period", "Jam"]].copy()
+    base = lineups[JAM_KEYS].copy()
     if "match_id" in lineups.columns:
         base["match_id"] = lineups["match_id"]
     else:
@@ -54,9 +54,9 @@ def lineups_long(lineups: pd.DataFrame) -> pd.DataFrame:
     long["_priority"] = long["Role"].map(_ROLE_PRIORITY)
     long = (
         long.sort_values("_priority", kind="stable")
-        .drop_duplicates(subset=["Date", "Period", "Jam", "Player_number"], keep="first")
+        .drop_duplicates(subset=JAM_KEYS + ["Player_number"], keep="first")
         .drop(columns="_priority")
-        .sort_values(["Date", "Period", "Jam"], kind="stable")
+        .sort_values(JAM_KEYS, kind="stable")
         .reset_index(drop=True)
     )
     return long[LONG_COLUMNS]
@@ -68,7 +68,7 @@ def count_incomplete_jams(lineups: pd.DataFrame, long: pd.DataFrame | None = Non
         return 0
     if long is None:
         long = lineups_long(lineups)
-    keys = ["Date", "Period", "Jam"]
+    keys = JAM_KEYS
     total = len(lineups[keys].drop_duplicates())
     complete = long.groupby(keys).size().eq(5).sum() if not long.empty else 0
     return int(total - complete)

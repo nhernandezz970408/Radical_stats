@@ -63,19 +63,19 @@ def test_quinteto_con_jammer_usa_las_cinco() -> None:
 
 def test_combinaciones_distintas_en_datos_reales() -> None:
     long = lineups_long(load_data().lineups)
-    assert combos_por_jam(long, 4)["combo"].nunique() == 78
-    assert combos_por_jam(long, 3)["combo"].nunique() == 136
-    assert combos_por_jam(long, 2)["combo"].nunique() == 80
-    assert combos_por_jam(long, 5, incluir_jammer=True)["combo"].nunique() == 95
+    assert combos_por_jam(long, 4)["combo"].nunique() == 96
+    assert combos_por_jam(long, 3)["combo"].nunique() == 176
+    assert combos_por_jam(long, 2)["combo"].nunique() == 99
+    assert combos_por_jam(long, 5, incluir_jammer=True)["combo"].nunique() == 125
 
 
 def test_terna_arca_mamba_patada_de_mula() -> None:
     stats = estadisticas_combinaciones(load_data(), 3)
     fila = stats[stats["combo"] == ("17", "240", "913")].iloc[0]
-    assert fila["jams"] == 24
-    assert fila["pts_for"] == pytest.approx(2.42, abs=0.005)
-    assert fila["pts_against"] == pytest.approx(3.58, abs=0.005)
-    assert fila["partidos"] == 4 and fila["muestra"] == "Ok"
+    assert fila["jams"] == 27
+    assert fila["pts_for"] == pytest.approx(2.63, abs=0.005)
+    assert fila["pts_against"] == pytest.approx(3.63, abs=0.005)
+    assert fila["partidos"] == 5 and fila["muestra"] == "Ok"
 
 
 def test_cuarteto_y_dupla_reales() -> None:
@@ -83,7 +83,7 @@ def test_cuarteto_y_dupla_reales() -> None:
     cuartetos = estadisticas_combinaciones(frames, 4)
     assert cuartetos[cuartetos["combo"] == ("3", "17", "487", "913")]["jams"].item() == 9
     duplas = estadisticas_combinaciones(frames, 2)
-    assert duplas[duplas["combo"] == ("17", "240")]["jams"].item() == 53
+    assert duplas[duplas["combo"] == ("17", "240")]["jams"].item() == 62
 
 
 def test_ninguna_combinacion_bajo_el_minimo_aparece_sin_muestra_baja() -> None:
@@ -114,8 +114,8 @@ def test_filtros_por_jammer_e_incluye() -> None:
     con_arca = estadisticas_combinaciones(frames, 3, incluye=["17"])
     assert len(con_arca) < len(todas) and all("17" in c for c in con_arca["combo"])
     con_jammer = estadisticas_combinaciones(frames, 3, jammer="16")
-    # La jammer 16 jugó 61 jams; cada uno aporta 4 ternas del pack (los jams completos).
-    assert 0 < con_jammer["jams"].sum() <= 4 * 61
+    # La jammer 16 jugó 75 jams; cada uno aporta 4 ternas del pack (los jams completos).
+    assert 0 < con_jammer["jams"].sum() <= 4 * 75
     assert con_jammer["jams"].sum() < todas["jams"].sum()
 
 

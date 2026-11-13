@@ -723,7 +723,7 @@ CHEQUEOS = {
         "Cada partido y periodo debe tener los mismos jams en la tabla de jams, la del rival y las alineaciones.",
     ),
     "claves_duplicadas": (
-        "Claves (fecha, periodo, jam) duplicadas",
+        "Claves (fecha, rival, periodo, jam) duplicadas",
         "La clave no debe repetirse en jams, rival, alineaciones ni tiempos. Si se repite dentro de un "
         "partido, puede haber dos partidos con la misma fecha y rival mezclados.",
     ),

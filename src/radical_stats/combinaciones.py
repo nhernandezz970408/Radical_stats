@@ -43,12 +43,12 @@ def combos_por_jam(long: pd.DataFrame, tamano: int, incluir_jammer: bool = False
         return pd.DataFrame(columns=columns)
     pool = long if incluir_jammer else long[long["Role"].isin(PACK_ROLES)]
     rows = []
-    for (fecha, periodo, jam, match_id), grupo in pool.groupby(JAM_KEYS + ["match_id"], sort=False):
+    for (fecha, rival, periodo, jam, match_id), grupo in pool.groupby(JAM_KEYS + ["match_id"], sort=False):
         jugadoras = sorted(set(grupo["Player_number"]), key=_orden_jugadora)
         if len(jugadoras) < tamano:
             continue
         for combo in combinations(jugadoras, tamano):
-            rows.append((fecha, periodo, jam, match_id, combo))
+            rows.append((fecha, rival, periodo, jam, match_id, combo))
     return pd.DataFrame(rows, columns=columns)
 
 

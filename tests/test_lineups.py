@@ -40,9 +40,9 @@ def test_box_columns_follow_source_position() -> None:
 def test_real_data() -> None:
     frames = load_data()
     long = lineups_long(frames.lineups)
-    assert len(long) == 751
-    assert not long.duplicated(["Date", "Period", "Jam", "Player_number"]).any()
-    assert count_incomplete_jams(frames.lineups, long) == 1
+    assert len(long) == 953
+    assert not long.duplicated(["Date", "Rival", "Period", "Jam", "Player_number"]).any()
+    assert count_incomplete_jams(frames.lineups, long) == 4
 
     players = build_player_table(frames)
     assert "?" not in players["Player_number"].tolist()
