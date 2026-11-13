@@ -6,7 +6,7 @@ import pandas as pd
 from radical_stats import config as cfg
 from radical_stats.lineups import ROLES, lineups_long
 from radical_stats.models import DataFrames
-from radical_stats.partidos import agregar_match_id, crear_match_id
+from radical_stats.partidos import JAM_KEYS, agregar_match_id, crear_match_id
 
 
 def build_team_metrics(frames: DataFrames) -> pd.Series:
@@ -81,12 +81,11 @@ def _ratio_pct(series: pd.Series) -> float:
 # --- Faltas y caja -------------------------------------------------------------
 #
 # Definiciones:
-# - Falta: una fila del Penalty_tracker (Date, Period, Jam, Player_number, Penalty_code).
+# - Falta: una fila del Penalty_tracker (Date, Rival, Period, Jam, Player_number, Penalty_code).
 # - Faltas por jam: faltas / jams en pista de la jugadora, del equipo o de la combinación.
 # - box_start de un jam: número de jugadoras nuestras con Start_box = 1 (0, 1 o 2 o más).
 # - Jam con caja: al menos una jugadora con Start_box o Finish_box = 1.
 
-JAM_KEYS = ["Date", "Period", "Jam"]
 SIN_ROL = "sin_rol"  # falta de una jugadora que no figura en la alineación de ese jam
 BOX_START_MAX = 2  # el valor 2 agrupa "2 o más"
 
@@ -270,7 +269,7 @@ def penalty_code_counts(frames: DataFrames, codes: pd.DataFrame) -> pd.DataFrame
 def effective_by_jam(frames: DataFrames) -> pd.DataFrame:
     """Una fila por jam con pts_for, pts_against, eff y valores relativos al partido.
 
-    Une Jam_table y Rival_Jam_table por (Date, Period, Jam). Las columnas `*_rel` restan el
+    Une Jam_table y Rival_Jam_table por (Date, Rival, Period, Jam). Las columnas `*_rel` restan el
     promedio de ese partido (match_id = "Date | Rival") dentro de los datos recibidos.
     """
     columns = JAM_KEYS + ["match_id", "Jammer", "pts_for", "pts_against", "eff",
@@ -279,7 +278,7 @@ def effective_by_jam(frames: DataFrames) -> pd.DataFrame:
     if ours.empty or rival.empty:
         return pd.DataFrame(columns=columns)
 
-    left = ours[JAM_KEYS + ["Rival", "Jammer", "Total_points"]].drop_duplicates(subset=JAM_KEYS)
+    left = ours[JAM_KEYS + ["Jammer", "Total_points"]].drop_duplicates(subset=JAM_KEYS)
     right = rival[JAM_KEYS + ["Total_points"]].drop_duplicates(subset=JAM_KEYS)
     out = left.merge(right, on=JAM_KEYS, how="inner", suffixes=("_for", "_against"))
     out = out.rename(columns={"Total_points_for": "pts_for", "Total_points_against": "pts_against"})

@@ -10,7 +10,7 @@ def test_period_is_1_or_2_everywhere() -> None:
 
 def test_lineups_jammer_matches_jam_table() -> None:
     frames = load_data()
-    assert len(frames.lineups) == 151
+    assert len(frames.lineups) == 192
     assert len(jammer_mismatches(frames)) == 0
 
 
@@ -18,5 +18,5 @@ def test_penalties_fall_on_players_on_track() -> None:
     frames = load_data()
     total = len(frames.penalty_tracker)
     off = len(penalties_off_track(frames))
-    assert total == 131
-    assert total - off >= 130
+    assert total == 152
+    assert total - off >= 151

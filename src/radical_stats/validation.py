@@ -8,9 +8,7 @@ from radical_stats import textos as T
 from radical_stats.jugadoras import mapa_nombres, nombres_repetidos
 from radical_stats.lineups import ROLE_COLS, lineups_long
 from radical_stats.models import DataFrames
-from radical_stats.partidos import agregar_match_id, partidos_con_claves_repetidas
-
-JAM_KEYS = ["Date", "Period", "Jam"]
+from radical_stats.partidos import JAM_KEYS, agregar_match_id, partidos_con_claves_repetidas
 
 
 def _clean(series: pd.Series) -> pd.Series:
@@ -152,7 +150,7 @@ def chequeo_jams_por_partido(frames: DataFrames) -> Chequeo:
 
 
 def claves_duplicadas(frames: DataFrames) -> pd.DataFrame:
-    """Filas con (Date, Period, Jam) repetida en las tablas que deben tener una fila por jam."""
+    """Filas con (Date, Rival, Period, Jam) repetida en las tablas que deben tener una fila por jam."""
     partes = []
     for atributo, nombre in _TABLAS_UNA_FILA_POR_JAM:
         tabla = getattr(frames, atributo)

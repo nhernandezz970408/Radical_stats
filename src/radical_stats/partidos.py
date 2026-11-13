@@ -12,7 +12,8 @@ import pandas as pd
 from radical_stats.models import DataFrames
 
 SEPARADOR = " | "
-JAM_KEYS = ["Date", "Period", "Jam"]
+# Llave de un jam. Incluye Rival porque dos partidos pueden jugarse el mismo día (torneos).
+JAM_KEYS = ["Date", "Rival", "Period", "Jam"]
 
 
 def crear_match_id(df: pd.DataFrame) -> pd.Series:

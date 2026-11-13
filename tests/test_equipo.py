@@ -14,18 +14,19 @@ from test_effectiveness import _synthetic_frames
 ROOT = Path(__file__).resolve().parents[1]
 PAGINA = ROOT / "pages" / "1_Estadisticas_de_Equipo.py"
 SIN_TIEMPO = "2026-08-08 | Rock and Roller Queens"
+SIN_TIEMPO_REBEL = "2026-08-08 | Rebel Maidens"
 
 
 def test_kpis_reales() -> None:
     kpis = equipo.kpis_equipo(load_data())
-    assert kpis["jams"] == 151
-    assert kpis["pts_for"] == pytest.approx(2.96, abs=0.005)
-    assert kpis["pts_against"] == pytest.approx(4.52, abs=0.005)
-    assert kpis["diff"] == pytest.approx(-1.56, abs=0.005)
-    assert kpis["lead_pct"] == pytest.approx(35.1, abs=0.05)
-    assert kpis["rival_lead_pct"] == pytest.approx(51.7, abs=0.05)
-    assert kpis["penalties"] == 131
-    assert kpis["penalties_per_jam"] == pytest.approx(131 / 151)
+    assert kpis["jams"] == 192
+    assert kpis["pts_for"] == pytest.approx(2.80, abs=0.005)
+    assert kpis["pts_against"] == pytest.approx(4.10, abs=0.005)
+    assert kpis["diff"] == pytest.approx(-1.30, abs=0.005)
+    assert kpis["lead_pct"] == pytest.approx(37.0, abs=0.05)
+    assert kpis["rival_lead_pct"] == pytest.approx(50.0, abs=0.05)
+    assert kpis["penalties"] == 152
+    assert kpis["penalties_per_jam"] == pytest.approx(152 / 192)
 
 
 def test_tarjetas_con_diferencia_contra_el_resto() -> None:
@@ -38,14 +39,14 @@ def test_tarjetas_con_diferencia_contra_el_resto() -> None:
     assert all(t.delta is not None for t in con_resto)
     en_contra = next(t for t in con_resto if t.etiqueta == "Puntos en contra por jam")
     assert en_contra.valor == "2,10" and en_contra.delta_color == "inverse"
-    assert en_contra.delta.startswith("-3,30")
+    assert en_contra.delta.startswith("-2,52")
 
 
 def test_resumen_por_partido() -> None:
     resumen = equipo.resumen_por_partido(load_data())
-    assert len(resumen) == 4 and resumen["jams"].sum() == 151
-    assert resumen["pts_for"].sum() == 447 and resumen["pts_against"].sum() == 683
-    assert resumen["penalties"].sum() == 131
+    assert len(resumen) == 5 and resumen["jams"].sum() == 192
+    assert resumen["pts_for"].sum() == 538 and resumen["pts_against"].sum() == 787
+    assert resumen["penalties"].sum() == 152
     mostrado = equipo.formatear_resumen_partidos(resumen)
     assert list(mostrado.columns) == ["Rival", "Fecha", "Marcador", "Jams (n)", "Diferencia por jam", "Faltas"]
     assert "140 - 84" in mostrado["Marcador"].tolist()
@@ -62,7 +63,7 @@ def test_el_acumulado_por_tiempo_se_reinicia_en_cada_partido() -> None:
 
 def test_un_partido_sin_tiempo_se_avisa_en_vez_de_omitirse() -> None:
     _, sin_tiempo = equipo.efectivos_por_tiempo(load_data())
-    assert sin_tiempo == [SIN_TIEMPO]
+    assert sin_tiempo == [SIN_TIEMPO_REBEL, SIN_TIEMPO]
     assert equipo.etiqueta_partido(SIN_TIEMPO) == "Rock and Roller Queens (2026-08-08)"
 
 
@@ -77,8 +78,8 @@ def test_titulo_segun_la_seleccion_de_partidos() -> None:
 def test_frases_con_su_n_y_sin_reglas_de_muestra_corta() -> None:
     frases = equipo.frases_lo_que_mas_se_nota(load_data())
     assert len(frases) == 3 and all("n = " in f for f in frases)
-    assert "35,1 %" in frases[0] and "51,7 %" in frases[0]
-    assert "n = 78" in frases[1]
+    assert "37,0 %" in frases[0] and "50,0 %" in frases[0]
+    assert "n = 118" in frases[1]
     assert "2.º periodo" in frases[2]
     assert equipo.frases_lo_que_mas_se_nota(_synthetic_frames(jams_per_match=4)) == []  # 8 jams < 10
 
@@ -95,11 +96,11 @@ def test_etiquetas_de_jugadora_con_numero_si_el_nombre_se_repite() -> None:
 def test_las_tablas_de_faltas_usan_etiquetas_con_numero() -> None:
     frames = load_data()
     por_jugadora = equipo.faltas_por_jugadora_y_rol(frames)
-    assert por_jugadora["penalties"].sum() == 131
+    assert por_jugadora["penalties"].sum() == 152
     assert {"Jammer", "Pivot", "Bloque", "Fuera de la alineación"} >= set(por_jugadora["rol"])
-    assert equipo.faltas_por_periodo(frames)["penalties"].sum() == 131
+    assert equipo.faltas_por_periodo(frames)["penalties"].sum() == 152
     por_partido = equipo.faltas_por_partido(frames)
-    assert len(por_partido) == 4 and por_partido["penalties"].sum() == 131
+    assert len(por_partido) == 5 and por_partido["penalties"].sum() == 152
 
 
 def test_los_graficos_son_validos() -> None:

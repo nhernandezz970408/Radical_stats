@@ -39,9 +39,9 @@ def _synthetic_frames(jams_per_match: int = 20) -> DataFrames:
 
 def test_eff_rel_promedia_cero_por_partido_en_datos_reales() -> None:
     eff = effective_by_jam(load_data())
-    assert len(eff) == 151
+    assert len(eff) == 192
     assert eff.groupby("match_id")["eff_rel"].mean().abs().max() < 1e-9
-    assert eff["eff"].sum() == -236
+    assert eff["eff"].sum() == -249
 
 
 def test_jugadora_que_solo_juega_el_partido_malo() -> None:
@@ -84,9 +84,9 @@ def test_marca_de_muestra_baja_y_bootstrap_reproducible() -> None:
 def test_mamba_datos_reales() -> None:
     frames = load_data()
     mamba = player_effectiveness(frames).set_index("Player_number").loc["240"]
-    assert mamba["jams"] == 91
-    assert mamba["eff_por_jam"] == pytest.approx(-2.54, abs=0.02)
-    assert mamba["eff_rel_por_jam"] == pytest.approx(-0.74, abs=0.02)
+    assert mamba["jams"] == 112
+    assert mamba["eff_por_jam"] == pytest.approx(-2.10, abs=0.02)
+    assert mamba["eff_rel_por_jam"] == pytest.approx(-0.58, abs=0.02)
     assert not mamba["muestra_baja"]
     assert mamba["ic_bajo"] < mamba["eff_rel_por_jam"] < mamba["ic_alto"]
 
@@ -101,6 +101,6 @@ def test_toda_jugadora_tiene_su_n_de_jams() -> None:
 
 def test_tabla_por_partido_de_la_jugadora() -> None:
     table = player_effectiveness_by_match(load_data(), "240")
-    assert table["jams"].sum() == 91
-    assert table["penalties"].sum() == 9
-    assert len(table) == 4
+    assert table["jams"].sum() == 112
+    assert table["penalties"].sum() == 11
+    assert len(table) == 5

@@ -126,14 +126,14 @@ El «Lineup summary» agrupaba por quinteto exacto (cinco jugadoras, jammer incl
 
 Se calculan en `src/radical_stats/metrics.py`:
 
-- **Falta**: una fila del `Penalty_tracker` (`Date`, `Period`, `Jam`, `Player_number`, `Penalty_code`). Hay 131 en total.
+- **Falta**: una fila del `Penalty_tracker` (`Date`, `Rival`, `Period`, `Jam`, `Player_number`, `Penalty_code`). Hay 152 en total.
 - **Faltas por jam**: faltas divididas entre los jams en pista de la jugadora, del equipo o de la combinación (`penalties_by_jam`, `player_penalty_summary`).
 - **Faltas por 10 minutos en pista**: faltas / minutos × 10. Los minutos suman la duración (`Time.xlsx`) de los jams que jugó la jugadora, y solo cuentan los jams con tiempo. El partido de 2026-08-08 no tiene filas en `Time`, así que se muestra «sin dato» (no 0).
 - **Rol de una falta**: el rol (Jammer, Pivot o Bloque) que tenía la jugadora en el jam de la falta, según `lineups_long`. Si la jugadora no figura en la alineación de ese jam, la falta se muestra como «Fuera de la alineación».
 - **box_start** de un jam: número de jugadoras nuestras con `Start_box = 1`; se agrupa en 0, 1 y 2 o más (`box_state_by_jam`).
 - **Jam con caja**: al menos una jugadora con `Start_box` o `Finish_box = 1`.
 
-Las columnas `*_Start_jam_Box` y `*_Finish_jam_Box` de `Lineups.xlsx` son casillas de caja, **no faltas** (164 casillas frente a 131 faltas; quien empieza y termina el jam en caja marcaba dos casillas). Por eso ya no se usan como faltas: el antiguo gráfico «Penalties by Lineup» se eliminó. Las combinaciones muestran ahora las faltas reales del `Penalty_tracker` (faltas del equipo por jam) en los jams de cada una.
+Las columnas `*_Start_jam_Box` y `*_Finish_jam_Box` de `Lineups.xlsx` son casillas de caja, **no faltas** (185 casillas frente a 152 faltas; quien empieza y termina el jam en caja marcaba dos casillas). Por eso ya no se usan como faltas: el antiguo gráfico «Penalties by Lineup» se eliminó. Las combinaciones muestran ahora las faltas reales del `Penalty_tracker` (faltas del equipo por jam) en los jams de cada una.
 
 **Costo de la caja** (`box_cost_table`): por cada valor de `box_start` (0, 1 y 2 o más) muestra jams (n), puntos a favor por jam, puntos en contra por jam, puntos efectivos por jam y % de Lead rival. Con los datos actuales: 78 jams y 3,78 puntos en contra para 0; 54 y 5,39 para 1; 19 y 5,11 para 2 o más. No está ajustado por partido ni por jammer, y n es pequeño en cada grupo: son diferencias descriptivas, no efectos causales.
 
@@ -145,7 +145,7 @@ La falta de 2025-11-02, 1.er periodo, jam 19, jugadora #17 no coincide con la al
 
 El acumulado de puntos efectivos por jugadora engañaba: depende de los minutos jugados (el equipo promedia −1,56 por jam, así que quien juega más acumula más negativo), de un solo partido (Fuego Latino suma −249 de los −236 totales), de la jammer con la que patina una bloque y no mostraba el tamaño de la muestra. Por eso la página de equipo usa puntos efectivos **por jam** y **relativos al partido**. Se calculan en `src/radical_stats/metrics.py`:
 
-- `effective_by_jam(frames)`: une `Jam_table` y `Rival_Jam_table` por (`Date`, `Period`, `Jam`) y da `pts_for`, `pts_against`, `eff = pts_for - pts_against`, `match_id` y `eff_rel = eff - promedio de eff de ese partido` (promedia 0 dentro de cada partido). El promedio se calcula con los datos que reciba la función, es decir, con los filtros de partido y periodo aplicados.
+- `effective_by_jam(frames)`: une `Jam_table` y `Rival_Jam_table` por (`Date`, `Rival`, `Period`, `Jam`) y da `pts_for`, `pts_against`, `eff = pts_for - pts_against`, `match_id` y `eff_rel = eff - promedio de eff de ese partido` (promedia 0 dentro de cada partido). El promedio se calcula con los datos que reciba la función, es decir, con los filtros de partido y periodo aplicados.
 - `player_effectiveness(frames, por_rol=False)`: por jugadora (o por jugadora y rol), con su n de jams:
   - `eff_por_jam`, `eff_rel_por_jam`, `pts_for_por_jam`, `pts_against_por_jam` y sus versiones relativas al partido.
   - `con_y_sin`: por partido, eff medio con ella menos eff medio sin ella, solo si hay al menos 5 jams sin ella; se promedia entre partidos ponderando por sus jams. Es NaN si ningún partido es válido.
@@ -164,7 +164,7 @@ Los mínimos y parámetros están en `src/radical_stats/config.py` (`MIN_JAMS_JU
 - **Fuente:** la leyenda de la hoja «Penalties» de `data/Partidos/Match_*.xlsx`, donde cada código encabeza su nombre (por ejemplo `A` = High Block, `B` = Back Block, `D` = Direction). El mapeo se contrastó con la hoja «Penalty Summary» (orden de columnas) y con el `Penalty_tracker`: en `Match_1` coinciden B, L, H, P y X, y en `Match_3` coinciden G, A, M, D, X e I.
 - `nombre_es` es la traducción al español del nombre que aparece en la planilla.
 - `descripcion_es` solo se llena con las variantes que la leyenda lista bajo el código (C, D, N, P y X). En los demás códigos queda vacía: **pendiente de confirmar por el cuerpo técnico**. En particular, no se confirmó qué variantes agrupan `G` (la leyenda lista «Insubordination») e `I` (la leyenda lista «Star Pass Violation» y una línea «/ Interference» cortada).
-- **`Unknown`:** 25 de las 131 faltas (19 %) no tienen código; se muestran como «Sin código».
+- **`Unknown`:** 25 de las 152 faltas (16 %) no tienen código; se muestran como «Sin código».
 
 ## Cómo agregar un partido nuevo
 
@@ -190,12 +190,12 @@ La página **Calidad de datos** (`src/radical_stats/validation.py`, función `ch
 
 | Chequeo | Estado | Filas |
 |---|---|---|
-| Jams por partido y periodo iguales entre jams, rival y alineaciones (40, 45, 38 y 28 jams por partido) | OK | 0 |
-| Claves (fecha, periodo, jam) duplicadas en jams, rival, alineaciones o tiempos | OK | 0 |
-| Partidos sin filas en `Time.xlsx` (Rock and Roller Queens, 2026-08-08) | Aviso | 1 |
+| Jams por partido y periodo iguales entre jams, rival y alineaciones (40, 45, 38, 41 y 28 jams por partido) | OK | 0 |
+| Claves (fecha, rival, periodo, jam) duplicadas en jams, rival, alineaciones o tiempos | OK | 0 |
+| Partidos sin filas en `Time.xlsx` (Rebel Maidens y Rock and Roller Queens, 2026-08-08) | Aviso | 2 |
 | Jugadoras sin nombre y nombres repetidos (Medusa #2 y Medusa #10) | Aviso | 2 |
-| Valores «?» o vacíos en `Lineups.xlsx` (2026-08-08, 2.º periodo, jam 12) | Aviso | 1 |
-| Faltas con código `Unknown` (25 de 131) | Aviso | 25 |
+| Valores «?» o vacíos en `Lineups.xlsx` (2026-08-08: Rock and Roller Queens P2 J12; Rebel Maidens P1 J2, P1 J19 y P2 J6) | Aviso | 4 |
+| Faltas con código `Unknown` (25 de 152) | Aviso | 25 |
 | Faltas de una jugadora que no estaba en pista (2025-11-02, 1.er periodo, jam 19, jugadora 17) | Aviso | 1 |
 | Jammer de las alineaciones distinta de la de la tabla de jams | OK | 0 |
 
@@ -205,13 +205,15 @@ La clave duplicada no se revisa en `Penalty_tracker.xlsx`, porque una jugadora p
 
 `radical_stats.partidos` es el único lugar donde se arma el `match_id` («fecha | rival»). Si dos partidos distintos compartieran fecha y rival, sus filas quedarían bajo el mismo `match_id`; en ese caso se repetirían (`Period`, `Jam`) dentro del «partido», y la aplicación lo avisa (en todas las páginas y en la de calidad de datos) en lugar de mezclarlos en silencio.
 
+La llave de un jam (`JAM_KEYS` en `partidos.py`) es (`Date`, `Rival`, `Period`, `Jam`): incluye el rival porque en un torneo se juegan varios partidos el mismo día (por ejemplo, Rock and Roller Queens y Rebel Maidens el 2026-08-08).
+
 ### Caché
 
 `load_data()` y `load_penalty_codes()` leen los archivos solo cuando cambia la firma de `data/` (nombre, fecha de modificación y tamaño de cada Excel y CSV; `data_loader.firma_datos`), así que un Excel actualizado se recarga sin reiniciar la app. Los cálculos pesados (bootstrap de efectividad, combinaciones, perfil de la jugadora y chequeos) están en `radical_stats.cache` con `st.cache_data` y usan esa misma firma, junto con los partidos y periodos filtrados, como llave.
 
 ## Definiciones de métricas
 
-- **Puntos efectivos** (`eff`): puntos a favor menos puntos en contra de un jam. Se calculan uniendo `Jam_table` y `Rival_Jam_table` por (`Date`, `Period`, `Jam`).
+- **Puntos efectivos** (`eff`): puntos a favor menos puntos en contra de un jam. Se calculan uniendo `Jam_table` y `Rival_Jam_table` por (`Date`, `Rival`, `Period`, `Jam`).
 - **Relativos al partido** (`eff_rel`): los puntos efectivos de un jam menos el promedio de puntos efectivos de su partido. Promedian 0 dentro de cada partido; quitan el efecto de enfrentar a un rival fuerte o débil.
 - **Por jam, no acumulado:** el acumulado depende de los minutos jugados y del rival; por eso se comparan promedios por jam.
 - **Con y sin ella:** por partido, el promedio de `eff` en los jams con la jugadora menos el promedio en los jams sin ella (solo si hay al menos 5 jams sin ella), ponderado por los jams de cada partido.
@@ -226,7 +228,7 @@ La clave duplicada no se revisa en `Penalty_tracker.xlsx`, porque una jugadora p
 
 `Jam_table`, `Rival_Jam_table`, `Penalty_tracker` y `Time` guardan `Period` como `1` (primer periodo) y `2` (segundo periodo). `Lineups.xlsx`, en cambio, lo guarda como «periodo mod 2»: `1` = primer periodo y `0` = segundo periodo.
 
-`load_data()` normaliza todas las tablas a `Period` entero 1/2 y traduce Lineups con el mapeo explícito `{1: 1, 0: 2}` (si Lineups ya usara 1/2, no se toca). El mapeo se verificó con los datos: con él, la `Jammer` de Lineups coincide con la de `Jam_table` en los 151 jams, y 130 de las 131 faltas caen sobre una jugadora de la alineación de ese jam. Sumar 1 a todo (`0 -> 1`, `1 -> 2`) cruza los dos periodos y rompe los cruces por (`Date`, `Period`, `Jam`).
+`load_data()` normaliza todas las tablas a `Period` entero 1/2 y traduce Lineups con el mapeo explícito `{1: 1, 0: 2}` (si Lineups ya usara 1/2, no se toca). El mapeo se verificó con los datos: con él, la `Jammer` de Lineups coincide con la de `Jam_table` en los 192 jams, y 151 de las 152 faltas caen sobre una jugadora de la alineación de ese jam. Sumar 1 a todo (`0 -> 1`, `1 -> 2`) cruza los dos periodos y rompe los cruces por (`Date`, `Rival`, `Period`, `Jam`).
 
 `radical_stats.validation` revisa estas condiciones al cargar y la aplicación muestra avisos que no bloquean (Jammer distinta, faltas de jugadoras fuera de la alineación y partidos sin filas en `Time`).
 

@@ -56,6 +56,7 @@ def test_opciones_de_partidos_reales() -> None:
         "2025-11-01 | Pacha Mamis",
         "2025-11-02 | Violet Attack",
         "2025-11-03 | Fuego Latino",
+        "2026-08-08 | Rebel Maidens",
         "2026-08-08 | Rock and Roller Queens",
     ]
 
@@ -169,28 +170,33 @@ def test_chequeos_vacios_no_fallan() -> None:
 
 def test_datos_reales_totales() -> None:
     frames = load_data()
-    assert len(frames.jam_table) == 151 and len(frames.rival_jam_table) == 151 and len(frames.lineups) == 151
-    assert len(opciones_de_partidos(frames)) == 4
-    assert validation.jams_por_partido_total(frames)["jams"].tolist() == [40, 45, 38, 28]
-    assert len(frames.penalty_tracker) == 131
+    assert len(frames.jam_table) == 192 and len(frames.rival_jam_table) == 192 and len(frames.lineups) == 192
+    assert len(opciones_de_partidos(frames)) == 5
+    assert validation.jams_por_partido_total(frames)["jams"].tolist() == [40, 45, 38, 41, 28]
+    assert len(frames.penalty_tracker) == 152
     nombres = frames.player_names
-    assert len(nombres) == 18 and nombres["Name"].notna().all() and (nombres["Name"].str.strip() != "").all()
+    assert len(nombres) == 20 and nombres["Name"].notna().all() and (nombres["Name"].str.strip() != "").all()
 
 
 def test_chequeos_reales_devuelven_el_conteo_de_hoy() -> None:
     chequeos = {c.clave: c for c in validation.chequeos_calidad(load_data())}
     assert list(chequeos) == ["jams_por_partido", "claves_duplicadas", "partidos_sin_time", "nombres",
                               "valores_faltantes", "faltas_unknown", "faltas_fuera_de_pista", "jammer"]
-    esperado = {"jams_por_partido": 0, "claves_duplicadas": 0, "partidos_sin_time": 1, "nombres": 2,
-                "valores_faltantes": 1, "faltas_unknown": 25, "faltas_fuera_de_pista": 1, "jammer": 0}
+    esperado = {"jams_por_partido": 0, "claves_duplicadas": 0, "partidos_sin_time": 2, "nombres": 2,
+                "valores_faltantes": 4, "faltas_unknown": 25, "faltas_fuera_de_pista": 1, "jammer": 0}
     assert {k: c.cantidad for k, c in chequeos.items()} == esperado
     assert {k: c.estado for k, c in chequeos.items()}["jammer"] == "OK"
 
-    assert chequeos["partidos_sin_time"].filas["Rival"].tolist() == ["Rock and Roller Queens"]
+    assert chequeos["partidos_sin_time"].filas["Rival"].tolist() == ["Rebel Maidens", "Rock and Roller Queens"]
     assert sorted(chequeos["nombres"].filas["Player_number"]) == ["10", "2"]
     assert set(chequeos["nombres"].filas["Name"]) == {"Medusa"}
-    falta = chequeos["valores_faltantes"].filas.iloc[0]
-    assert (str(falta["Date"]), falta["Period"], falta["Jam"]) == ("2026-08-08", 2, 12)
+    faltantes = chequeos["valores_faltantes"].filas
+    assert [(str(f.Date), f.Rival, f.Period, f.Jam) for f in faltantes.itertuples()] == [
+        ("2026-08-08", "Rock and Roller Queens", 2, 12),
+        ("2026-08-08", "Rebel Maidens", 1, 2),
+        ("2026-08-08", "Rebel Maidens", 1, 19),
+        ("2026-08-08", "Rebel Maidens", 2, 6),
+    ]
     fuera = chequeos["faltas_fuera_de_pista"].filas.iloc[0]
     assert (str(fuera["Date"]), fuera["Period"], fuera["Jam"], fuera["Player_number"]) == ("2025-11-02", 1, 19, "17")
 
@@ -210,10 +216,10 @@ def test_la_pagina_de_calidad_muestra_los_avisos_de_hoy() -> None:
     assert len(tarjetas) == 8
     esperado = {
         "Jams por partido y periodo": ("OK", 0),
-        "Claves (fecha, periodo, jam) duplicadas": ("OK", 0),
-        "Partidos sin tiempos": ("Aviso", 1),
+        "Claves (fecha, rival, periodo, jam) duplicadas": ("OK", 0),
+        "Partidos sin tiempos": ("Aviso", 2),
         "Nombres de jugadoras": ("Aviso", 2),
-        "Valores «?» o vacíos en las alineaciones": ("Aviso", 1),
+        "Valores «?» o vacíos en las alineaciones": ("Aviso", 4),
         "Faltas sin código": ("Aviso", 25),
         "Faltas de una jugadora que no estaba en pista": ("Aviso", 1),
         "Jammer distinta entre alineaciones y jams": ("OK", 0),
@@ -242,11 +248,11 @@ def test_un_excel_actualizado_se_recarga_sin_reiniciar(tmp_path: Path, monkeypat
         if archivo.is_file():
             shutil.copy(archivo, tmp_path / archivo.name)
     monkeypatch.setattr(data_loader, "DATA_DIR", tmp_path)
-    assert len(data_loader.load_data().jam_table) == 151
-    assert len(data_loader.load_data().jam_table) == 151  # segunda lectura: viene de la caché
+    assert len(data_loader.load_data().jam_table) == 192
+    assert len(data_loader.load_data().jam_table) == 192  # segunda lectura: viene de la caché
 
     ruta = tmp_path / "Jam_table.xlsx"
     pd.read_excel(ruta).iloc[:-1].to_excel(ruta, index=False)
     nuevo = ruta.stat().st_mtime + 5
     os.utime(ruta, (nuevo, nuevo))
-    assert len(data_loader.load_data().jam_table) == 150  # se recargó sin limpiar la caché
+    assert len(data_loader.load_data().jam_table) == 191  # se recargó sin limpiar la caché
